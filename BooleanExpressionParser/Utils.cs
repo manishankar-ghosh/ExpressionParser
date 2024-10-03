@@ -42,5 +42,40 @@ namespace ExpressionParser
             return comapreResult == comparisionOperator1 || comapreResult == comparisionOperator2;
         }
 
+        public static char GetDataType(string value)
+        {
+            char result;
+            if(int.TryParse(value, out var _))
+            {
+                result = DataType.Integer;
+            }
+            else if (long.TryParse(value, out var _))
+            {
+                result = DataType.Long;
+            }
+            else if (float.TryParse(value, out var _))
+            {
+                result = DataType.Float;
+            }
+            else if (double.TryParse(value, out var _))
+            {
+                result = DataType.Double;
+            }
+            else if (decimal.TryParse(value, out var _))
+            {
+                result = DataType.Decimal;
+            }
+            else if (DateTime.TryParse(value, out var _))
+            {
+                result = DataType.DateTime;
+            }
+            else
+            {
+                result = DataType.String;
+            }
+
+            return result;
+        }
+
     }
 }

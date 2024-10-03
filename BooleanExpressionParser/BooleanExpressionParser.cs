@@ -42,7 +42,7 @@ namespace ExpressionParser
 
             return stack.Pop();
         }
-
+        
         private static void ApplyOperator(Stack<bool> stack, Stack<char> operatorStack)
         {
             char op = operatorStack.Pop();
