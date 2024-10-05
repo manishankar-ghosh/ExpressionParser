@@ -108,6 +108,7 @@ namespace ExpressionParser
                 {
                     value = value.Replace(condition.Token!, condition.Value);
                     dataType = condition.DataType;
+                    dataOrderedByPropertyNameLength.Remove(condition);
                 }
 
 
