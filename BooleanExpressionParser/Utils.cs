@@ -17,10 +17,28 @@ namespace ExpressionParser
                 var typedValue2 = int.Parse(value2);
                 result = typedValue1.CompareTo(typedValue2);
             }
+            else if (dataType == 'l')
+            {
+                var typedValue1 = long.Parse(value1);
+                var typedValue2 = long.Parse(value2);
+                result = typedValue1.CompareTo(typedValue2);
+            }
             else if (dataType == 'f')
             {
                 var typedValue1 = float.Parse(value1);
                 var typedValue2 = float.Parse(value2);
+                result = typedValue1.CompareTo(typedValue2);
+            }
+            else if (dataType == 'd')
+            {
+                var typedValue1 = double.Parse(value1);
+                var typedValue2 = double.Parse(value2);
+                result = typedValue1.CompareTo(typedValue2);
+            }
+            else if (dataType == 'm')
+            {
+                var typedValue1 = decimal.Parse(value1);
+                var typedValue2 = decimal.Parse(value2);
                 result = typedValue1.CompareTo(typedValue2);
             }
             else if (dataType == 't')
