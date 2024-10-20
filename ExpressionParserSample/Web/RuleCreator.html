@@ -1,46 +1,61 @@
 <html>
 <head>
     <script>
+        let ruleVariables = [
+            {
+                "variable": "(Select)",
+                "dataType": "u",
+                "defaultValue": ""
+            },
+            {
+                "variable": "WagerCount",
+                "dataType": "i",
+                "defaultValue": 0
+            },
+            {
+                "variable": "TotalWagerAmount",
+                "dataType": "d",
+                "defaultValue": 1
+            },
+            {
+                "variable": "WagerDuration",
+                "dataType": "i",
+                "defaultValue": 0
+            },
+            {
+                "variable": "TotalDeposit",
+                "dataType": "d",
+                "defaultValue": 0
+            },
+            {
+                "variable": "ModuleId",
+                "dataType": "i",
+                "defaultValue": 1
+            },
+            {
+                "variable": "ClientId",
+                "dataType": "i",
+                "defaultValue": 1
+            }
+        ];
+
+        let opeerators = [">=", "<=", "!=", ">", "<", "="];
+
+        let tblRuleDesigner;
+        let rowCount = 20;
+        let colCount = 20;
+        let cellDefaultText = "(Click here to create rule)";
         let cellToEvaluate = null;
         function initialize() {
-            let ruleVariables = [
-                {
-                    "variable": "WagerCount",
-                    "dataType": "i"
-                },
-                {
-                    "variable": "TotalWagerAmount",
-                    "dataType": "d"
-                },
-                {
-                    "variable": "WagerDuration",
-                    "dataType": "i"
-                },
-                {
-                    "variable": "TotalDeposit",
-                    "dataType": "d"
-                },
-                {
-                    "variable": "ModuleId",
-                    "dataType": "i"
-                },
-                {
-                    "variable": "ClientId",
-                    "dataType": "i"
-                }
-            ];
+            tblRuleDesigner = document.getElementById("tblRuleDesigner");
 
-            let opeerators = [">=", "<=", "!=", ">", "<", "="];
-
-            let tblRuleDesigner = document.getElementById("tblRuleDesigner");
-            let rowCount = 20;
-            let colCount = 20;
             for (let i = 0; i < rowCount; i++) {
                 let row = tblRuleDesigner.insertRow(i);
                 for (let j = 0; j < colCount; j++) {
                     let cell = row.insertCell(j);
                     cell.id = `ruleCell_${i}_${j}`;
-                    cell.innerText = j;
+                    cell.style.visibility = "hidden";
+                    cell.style.fontFamily = "Courier New";
                     //let ruleStringDIv = document.createElement("div");
                     //ruleStringDIv.id = `ruleStringDIv_${i}_${j}`;
                     //ruleStringDIv.innerText = j;
@@ -52,11 +67,14 @@
                     //cell.appendChild(ruleStringDIv);
                 }
             }
+            let cell = tblRuleDesigner.rows[0].cells[0];
+            cell.innerText = cellDefaultText;
+            cell.style.visibility = "visible";
 
             let selRuleVariables = document.getElementById("selRuleVariables");
             ruleVariables.forEach(item => {
                 let option = document.createElement("option");
-                option.value = item.dataType;
+                option.value = item;
                 option.innerText = item.variable;
                 selRuleVariables.appendChild(option);
             });
@@ -66,12 +84,22 @@
     </script>
 </head>
 <body onload="initialize()">
+    <button onclick="validateFinalRule()">Validate Rule</button>
+    <span id="spanFinalRule" style="font-family: 'Courier New'">
+
+    </span>
+    <br /><br />
     <table id="tblRuleDesigner" border="1">
     </table>
 
-    <div id="ruleUiDIv">
-        <select id="selRuleVariables">
-        </select> &nbsp;
+    <div id="ruleUiDIv" style="visibility:hidden">
+        <select id="selRuleBracketsStart">
+            <option value="">&nbsp;</option>
+            <option value="(">(</option>
+            <option value=")">)</option>
+        </select> 
+        <select id="selRuleVariables" onchange="onRuleVariableChange()">
+        </select>
         <select id="selOperators">
             <option value=">=">>=</option>
             <option value="<="><=</option>
@@ -79,31 +107,203 @@
             <option value=">">></option>
             <option value="<"><</option>
             <option value="=">=</option>
-        </select> &nbsp;
-        <input type="text" id="ruleValue" />
+        </select>
+        <input type="text" id="txtRuleValue" style="width: 50px"value="10" />
+        <select id="selRuleBracketsClose">
+            <option value="">&nbsp;</option>
+            <option value="(">(</option>
+            <option value=")">)</option>
+        </select>
     </div>
 
     <script>
         let ruleUiDIv = document.getElementById("ruleUiDIv");
+        let selRuleBracketsStart = document.getElementById("selRuleBracketsStart");
         let selRuleVariables = document.getElementById("selRuleVariables");
+        let selOperators = document.getElementById("selOperators");
+        let txtRuleValue = document.getElementById("txtRuleValue");
+        let selRuleBracketsClose = document.getElementById("selRuleBracketsClose");
+        let spanFinalRule = document.getElementById("spanFinalRule");
 
+        function getCellRule() {
+            let openBracket = selRuleBracketsStart.options[selRuleBracketsStart.selectedIndex].value;
+            let ruleVariable = selRuleVariables.options[selRuleVariables.selectedIndex].text;
+            let op = selOperators.options[selOperators.selectedIndex].value;
+            let ruleValue = txtRuleValue.value;
+            let closingBracket = selRuleBracketsClose.options[selRuleBracketsClose.selectedIndex].value;
+            let rule = `${openBracket}${ruleVariable} ${op} ${ruleValue}${closingBracket}`;
+
+            return rule;
+        }
         function onCellClick() {
             if (cellToEvaluate == this) {
 
             }
             else {
-                console.log(ruleUiDIv);
                 if (cellToEvaluate != null) {
-                    let cellRule = selRuleVariables.options[selRuleVariables.selectedIndex].text;
-                    cellToEvaluate.innerText = cellRule;
-
+                    //let cellRule = selRuleVariables.options[selRuleVariables.selectedIndex].text;
+                    if (txtRuleValue.value.trim() == "") {
+                        alert("Rule value shouldn't be empty!");
+                    }
+                    cellToEvaluate.innerText = getCellRule();
+                    spanFinalRule.innerText = getFinalRule();
                 }
                 
+                setupRuleUiDivForCell(this);
+
+                ruleUiDIv.style.visibility = "visible";
+
                 this.innerText = "";
+
                 this.appendChild(ruleUiDIv);
                 cellToEvaluate = this;
             }
             
+        }
+
+        function onRuleVariableChange() {
+            let currentCell = selRuleVariables.parentElement.parentElement;
+            let currentRow = currentCell.parentNode;
+            let rowIndex = currentRow.rowIndex;
+            let cellIndex = currentCell.cellIndex;
+            let visibility = "visible"; // selRuleVariables.selectedIndex == 0 ? "hidden" : "visible";
+            let item = selRuleVariables.options[selRuleVariables.selectedIndex];
+            let cell = tblRuleDesigner.rows[rowIndex + 1 % rowCount].cells[cellIndex];
+            cell.innerText = cellDefaultText;
+            cell.style.visibility = visibility;
+            cell = tblRuleDesigner.rows[rowIndex].cells[cellIndex + 1 % colCount];
+            cell.innerText = cellDefaultText;
+            cell.style.visibility = visibility;
+
+            //rowIndex++;
+            //cellIndex++;
+            if (selRuleVariables.selectedIndex == 0) {
+                //for (let i = rowIndex + 1; i < rowCount; i++) {
+                //    for (let j = cellIndex + 1; j < colCount; j++) {
+                //        tblRuleDesigner.rows[i].cells[j].style.visibility = "hidden";
+                //    }
+                //}
+            }
+            else {
+
+
+                //console.log(tableRow.rowIndex);
+            }
+            //console.log(selRuleVariables.parentElement.parentElement);
+        }
+
+        function setupRuleUiDivForCell(cell) {
+            let cellRule = cell.innerText;
+            if (cellRule == "" || cellRule == cellDefaultText) {
+                selRuleVariables.selectedIndex = 0;
+                selRuleBracketsStart.selectedIndex = 0;
+                selRuleBracketsClose.selectedIndex = 0;
+            }
+            else {
+                //selRuleBracketsStart.selectedIndex = cellRule.startsWith("(") ? 1 : 0;
+                //selRuleBracketsClose.selectedIndex = cellRule.startsWith(")") ? 2 : 0;
+                if (cellRule.startsWith("(")) {
+                    selRuleBracketsStart.selectedIndex = 1;
+                    cellRule = cellRule.substr(1);
+                }
+                else {
+                    selRuleBracketsStart.selectedIndex = 0;
+                }
+
+                if (cellRule.endsWith(")")) {
+                    selRuleBracketsClose.selectedIndex = 2;
+                    cellRule = cellRule.substr(0, cellRule.length - 1);
+                }
+                else {
+                    selRuleBracketsClose.selectedIndex = 0;
+                }
+
+                const regex = new RegExp(opeerators.join("|"));
+                const ar = cellRule.split(regex);
+                if (ar.length > 0) {
+                    selRuleVariables.selectedIndex = ruleVariables.findIndex(x => x.variable == ar[0].trim());
+                    txtRuleValue.value = ar[1].trim();
+                }
+                
+
+            }
+
+
+        }
+
+        function validateBrackets(rule) {
+            let stack = [];
+            let pos = 0;
+            let result = true;
+            for (let c of rule) {
+                if (c == "(") {
+                    stack.push(c);
+                }
+                else if (c == ")") {
+                    if (stack.length == 0) {
+                        alert(`Rule is not valid.\r\nThere is a bracket mismatch at position ${pos}`);
+                        result = false;
+                    }
+                    else {
+                        stack.pop();
+                    }
+                }
+                pos++;
+            }
+
+            return result;
+        }
+        function validateFinalRule() {
+            let rule = getFinalRule(false, true);
+            spanFinalRule.innerText = rule;
+            if (validateBrackets(rule)) {
+                alert("Rule is valid");
+            }
+            else {
+                alert("Rule is not valid");
+            }
+        }
+        function getFinalRule(error = false, alertError = false) {
+            const regex = new RegExp(opeerators.join("|"));
+            let rulesPerColumn = [];
+            for (let col = 0; col < colCount; col++) {
+                let rule = "";
+                for (let row = 0; row < rowCount; row++) {
+                    let cellRule = tblRuleDesigner.rows[row].cells[col].innerText;
+
+                    if (cellRule != "" && cellRule != cellDefaultText) {
+                        const ar = cellRule.split(regex);
+                        if (ar.length > 0) {
+                            selRuleVariables.selectedIndex = ruleVariables.findIndex(x => x.variable == ar[0].trim());
+                            if (ar.length > 1) {
+                                txtRuleValue.value = ar[1].trim();
+                                if (txtRuleValue.value == "" && alertError) {
+                                    alert("Rule value shouldn't be empty!");
+                                    error = true;
+                                }
+                            }
+                            else {
+                                if (alertError) {
+                                    alert("Rule value shouldn't be empty!");
+                                    error = true;
+                                }
+                            }
+                        }
+
+                        if (rule == "") {
+                            rule = cellRule;
+                        }
+                        else {
+                            rule = rule + " -a " + cellRule;
+                        }
+                    }
+                }
+                if (rule != "") {
+                    rulesPerColumn.push(rule);
+                }
+            }
+
+            return rulesPerColumn.join(" -o ");
         }
     </script>
 </body>
