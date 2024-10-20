@@ -1,0 +1,111 @@
+<html>
+<head>
+    <script>
+        let cellToEvaluate = null;
+        function initialize() {
+            let ruleVariables = [
+                {
+                    "variable": "WagerCount",
+                    "dataType": "i"
+                },
+                {
+                    "variable": "TotalWagerAmount",
+                    "dataType": "d"
+                },
+                {
+                    "variable": "WagerDuration",
+                    "dataType": "i"
+                },
+                {
+                    "variable": "TotalDeposit",
+                    "dataType": "d"
+                },
+                {
+                    "variable": "ModuleId",
+                    "dataType": "i"
+                },
+                {
+                    "variable": "ClientId",
+                    "dataType": "i"
+                }
+            ];
+
+            let opeerators = [">=", "<=", "!=", ">", "<", "="];
+
+            let tblRuleDesigner = document.getElementById("tblRuleDesigner");
+            let rowCount = 20;
+            let colCount = 20;
+            for (let i = 0; i < rowCount; i++) {
+                let row = tblRuleDesigner.insertRow(i);
+                for (let j = 0; j < colCount; j++) {
+                    let cell = row.insertCell(j);
+                    cell.id = `ruleCell_${i}_${j}`;
+                    cell.innerText = j;
+                    //let ruleStringDIv = document.createElement("div");
+                    //ruleStringDIv.id = `ruleStringDIv_${i}_${j}`;
+                    //ruleStringDIv.innerText = j;
+                    //cell.appendChild(ruleStringDIv);
+                    cell.addEventListener("click", onCellClick);
+                    //let ruleUiDIv = document.createElement("div");
+                    //ruleUiDIv.id = `ruleUiDIv_${i}_${j}`;
+                    //ruleStringDIv.innerText = j;
+                    //cell.appendChild(ruleStringDIv);
+                }
+            }
+
+            let selRuleVariables = document.getElementById("selRuleVariables");
+            ruleVariables.forEach(item => {
+                let option = document.createElement("option");
+                option.value = item.dataType;
+                option.innerText = item.variable;
+                selRuleVariables.appendChild(option);
+            });
+        }
+
+
+    </script>
+</head>
+<body onload="initialize()">
+    <table id="tblRuleDesigner" border="1">
+    </table>
+
+    <div id="ruleUiDIv">
+        <select id="selRuleVariables">
+        </select> &nbsp;
+        <select id="selOperators">
+            <option value=">=">>=</option>
+            <option value="<="><=</option>
+            <option value="!=">!=</option>
+            <option value=">">></option>
+            <option value="<"><</option>
+            <option value="=">=</option>
+        </select> &nbsp;
+        <input type="text" id="ruleValue" />
+    </div>
+
+    <script>
+        let ruleUiDIv = document.getElementById("ruleUiDIv");
+        let selRuleVariables = document.getElementById("selRuleVariables");
+
+        function onCellClick() {
+            if (cellToEvaluate == this) {
+
+            }
+            else {
+                console.log(ruleUiDIv);
+                if (cellToEvaluate != null) {
+                    let cellRule = selRuleVariables.options[selRuleVariables.selectedIndex].text;
+                    cellToEvaluate.innerText = cellRule;
+
+                }
+                
+                this.innerText = "";
+                this.appendChild(ruleUiDIv);
+                cellToEvaluate = this;
+            }
+            
+        }
+    </script>
+</body>
+
+</html>

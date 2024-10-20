@@ -12,4 +12,8 @@
     <ProjectReference Include="..\BooleanExpressionParser\ExpressionParser.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Web\" />
+  </ItemGroup>
+
 </Project>
