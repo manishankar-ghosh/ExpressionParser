@@ -1,6 +1,10 @@
-<html>
+﻿<html>
 <head>
     <script>
+        /*
+        TotalWagerCount and TotalWagerAmount should be included for all MID+CID combination in the data dictionary
+        irrespective of whether it is part of rule or not (this will help keeping the code more generic)
+        */
         let ruleVariables = [
             {
                 "variable": "(Select)",
@@ -8,12 +12,22 @@
                 "defaultValue": ""
             },
             {
-                "variable": "WagerCount",
+                "variable": "WagerCount", // Total wager count for a particular game in the rule
                 "dataType": "i",
                 "defaultValue": 0
             },
             {
-                "variable": "TotalWagerAmount",
+                "variable": "TotalWagerCount",//TotalWagerCount for a given level (Sum of all wager count that matches the rule)
+                "dataType": "i",
+                "defaultValue": 0
+            },
+            {
+                "variable": "WagerAmount", // Total wager amount for a particular game in the rule
+                "dataType": "d",
+                "defaultValue": 1
+            },
+            {
+                "variable": "TotalWagerAmount", //TotalWagerAmount for a given level (Sum of all wager amount that matches the rule)
                 "dataType": "d",
                 "defaultValue": 1
             },
@@ -44,7 +58,7 @@
         let tblRuleDesigner;
         let rowCount = 20;
         let colCount = 20;
-        let cellDefaultText = "(Click here to create rule)";
+        let cellDefaultText = "🖉";
         let cellToEvaluate = null;
         function initialize() {
             tblRuleDesigner = document.getElementById("tblRuleDesigner");
@@ -84,8 +98,13 @@
     </script>
 </head>
 <body onload="initialize()">
+    <h1 style="background-color: #aaaa00; color: #ffffff; text-align:center">Rule Editor</h1>
+    <div style="color: #00aa00">Click the 🖉 symbol to type a new rule</div>
+    <div style="color: #00aa00">Rules typed in vertical direction (Column) will be combined using AND</div>
+    <div style="color: #00aa00">Rules typed in horizontal direction (Row) will be combined using OR</div>
+    <br />
     <button onclick="validateFinalRule()">Validate Rule</button>
-    <span id="spanFinalRule" style="font-family: 'Courier New'">
+    <span id="spanFinalRule" style="font-family: 'Courier New'; background-color: #00aa00; color: #ffffff;">
 
     </span>
     <br /><br />
@@ -93,11 +112,12 @@
     </table>
 
     <div id="ruleUiDIv" style="visibility:hidden">
-        <select id="selRuleBracketsStart">
+        <span id="spanRuleBracketsStart"></span>
+        <select id="selRuleBracketsStart" onchange="selRuleBracketsStartOnChange()">
             <option value="">&nbsp;</option>
             <option value="(">(</option>
             <option value=")">)</option>
-        </select> 
+        </select>
         <select id="selRuleVariables" onchange="onRuleVariableChange()">
         </select>
         <select id="selOperators">
@@ -108,12 +128,13 @@
             <option value="<"><</option>
             <option value="=">=</option>
         </select>
-        <input type="text" id="txtRuleValue" style="width: 50px"value="10" />
-        <select id="selRuleBracketsClose">
+        <input type="text" id="txtRuleValue" style="width: 50px" value="10" />
+        <select id="selRuleBracketsClose" onchange="selRuleBracketsEndOnChange()">
             <option value="">&nbsp;</option>
             <option value="(">(</option>
             <option value=")">)</option>
         </select>
+        <span id="spanRuleBracketsEnd"></span>
     </div>
 
     <script>
@@ -124,41 +145,89 @@
         let txtRuleValue = document.getElementById("txtRuleValue");
         let selRuleBracketsClose = document.getElementById("selRuleBracketsClose");
         let spanFinalRule = document.getElementById("spanFinalRule");
+        let spanRuleBracketsStart = document.getElementById("spanRuleBracketsStart");
+        let spanRuleBracketsEnd = document.getElementById("spanRuleBracketsEnd");
+
+        function selRuleBracketsStartOnChange() {
+            if (selRuleBracketsStart.selectedIndex > 0) {
+                spanRuleBracketsStart.innerText += selRuleBracketsStart.options[selRuleBracketsStart.selectedIndex].value;
+                selRuleBracketsStart.selectedIndex = 0;
+            }
+        }
+
+        function selRuleBracketsEndOnChange() {
+            if (selRuleBracketsClose.selectedIndex > 0) {
+                spanRuleBracketsEnd.innerText += selRuleBracketsClose.options[selRuleBracketsClose.selectedIndex].value;
+                selRuleBracketsClose.selectedIndex = 0;
+            }
+        }
 
         function getCellRule() {
-            let openBracket = selRuleBracketsStart.options[selRuleBracketsStart.selectedIndex].value;
+            if (selRuleVariables.selectedIndex == 0) {
+                return "";
+            }
+
+            let openBracket = spanRuleBracketsStart.innerText; // selRuleBracketsStart.options[selRuleBracketsStart.selectedIndex].value;
             let ruleVariable = selRuleVariables.options[selRuleVariables.selectedIndex].text;
             let op = selOperators.options[selOperators.selectedIndex].value;
             let ruleValue = txtRuleValue.value;
-            let closingBracket = selRuleBracketsClose.options[selRuleBracketsClose.selectedIndex].value;
+            let closingBracket = spanRuleBracketsEnd.innerText; // selRuleBracketsClose.options[selRuleBracketsClose.selectedIndex].value;
             let rule = `${openBracket}${ruleVariable} ${op} ${ruleValue}${closingBracket}`;
 
             return rule;
         }
-        function onCellClick() {
-            if (cellToEvaluate == this) {
 
-            }
-            else {
+        function handleCellOnClick(clickedCell) {
+            if (cellToEvaluate != clickedCell) {
                 if (cellToEvaluate != null) {
-                    //let cellRule = selRuleVariables.options[selRuleVariables.selectedIndex].text;
-                    if (txtRuleValue.value.trim() == "") {
+                    if (selRuleVariables.selectedIndex > 0 && txtRuleValue.value.trim() == "") {
                         alert("Rule value shouldn't be empty!");
                     }
-                    cellToEvaluate.innerText = getCellRule();
+
+                    let cellRule = getCellRule();
+                    cellToEvaluate.innerText = cellRule == "" ? cellDefaultText : cellRule;
                     spanFinalRule.innerText = getFinalRule();
                 }
-                
-                setupRuleUiDivForCell(this);
 
-                ruleUiDIv.style.visibility = "visible";
+                if (clickedCell != null) {
+                    setupRuleUiDivForCell(clickedCell);
 
-                this.innerText = "";
+                    ruleUiDIv.style.visibility = "visible";
 
-                this.appendChild(ruleUiDIv);
-                cellToEvaluate = this;
+                    clickedCell.innerText = "";
+
+                    clickedCell.appendChild(ruleUiDIv);
+                }
             }
-            
+            cellToEvaluate = clickedCell;
+
+        }
+        function onCellClick() {
+            let clickedCell = this;
+            handleCellOnClick(clickedCell);
+
+            //if (cellToEvaluate != this) {
+            //    if (cellToEvaluate != null) {
+            //        //let cellRule = selRuleVariables.options[selRuleVariables.selectedIndex].text;
+            //        if (selRuleVariables.selectedIndex > 0 && txtRuleValue.value.trim() == "") {
+            //            alert("Rule value shouldn't be empty!");
+            //        }
+
+            //        let cellRule = getCellRule();
+            //        cellToEvaluate.innerText = cellRule == "" ? cellDefaultText : cellRule;
+            //        spanFinalRule.innerText = getFinalRule();
+            //    }
+
+            //    setupRuleUiDivForCell(this);
+
+            //    ruleUiDIv.style.visibility = "visible";
+
+            //    this.innerText = "";
+
+            //    this.appendChild(ruleUiDIv);
+            //    cellToEvaluate = this;
+            //}
+
         }
 
         function onRuleVariableChange() {
@@ -167,7 +236,8 @@
             let rowIndex = currentRow.rowIndex;
             let cellIndex = currentCell.cellIndex;
             let visibility = "visible"; // selRuleVariables.selectedIndex == 0 ? "hidden" : "visible";
-            let item = selRuleVariables.options[selRuleVariables.selectedIndex];
+
+            //Show two more adjacent caells
             let cell = tblRuleDesigner.rows[rowIndex + 1 % rowCount].cells[cellIndex];
             cell.innerText = cellDefaultText;
             cell.style.visibility = visibility;
@@ -192,31 +262,61 @@
             //console.log(selRuleVariables.parentElement.parentElement);
         }
 
+        function getCharsFromStart(text, c) {
+            let result = "";
+            for (let cc of text) {
+                if (cc == c) {
+                    result += cc;
+                }
+                else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        function getCharsFromEnd(text, c) {
+            let result = "";
+            for (let i = text.length - 1; i >= 0; i--) {
+                let cc = text[i];
+                if (cc == c) {
+                    result += cc;
+                }
+                else {
+                    break;
+                }
+            }
+            return result;
+        }
+
         function setupRuleUiDivForCell(cell) {
             let cellRule = cell.innerText;
             if (cellRule == "" || cellRule == cellDefaultText) {
+                spanRuleBracketsStart.innerText = "";
                 selRuleVariables.selectedIndex = 0;
                 selRuleBracketsStart.selectedIndex = 0;
                 selRuleBracketsClose.selectedIndex = 0;
+                txtRuleValue.value = "";
+                spanRuleBracketsEnd.innerText = "";
             }
             else {
-                //selRuleBracketsStart.selectedIndex = cellRule.startsWith("(") ? 1 : 0;
-                //selRuleBracketsClose.selectedIndex = cellRule.startsWith(")") ? 2 : 0;
                 if (cellRule.startsWith("(")) {
-                    selRuleBracketsStart.selectedIndex = 1;
-                    cellRule = cellRule.substr(1);
+                    spanRuleBracketsStart.innerText = getCharsFromStart(cellRule, "(");
+                    cellRule = cellRule.substr(spanRuleBracketsStart.innerText.length);
                 }
                 else {
-                    selRuleBracketsStart.selectedIndex = 0;
+                    spanRuleBracketsStart.innerText = "";
+                }
+                if (cellRule.endsWith(")")) {
+                    spanRuleBracketsEnd.innerText = getCharsFromEnd(cellRule, ")");
+                    cellRule = cellRule.substr(0, cellRule.length - spanRuleBracketsEnd.innerText.length);
+                }
+                else {
+                    spanRuleBracketsEnd.innerText = "";
                 }
 
-                if (cellRule.endsWith(")")) {
-                    selRuleBracketsClose.selectedIndex = 2;
-                    cellRule = cellRule.substr(0, cellRule.length - 1);
-                }
-                else {
-                    selRuleBracketsClose.selectedIndex = 0;
-                }
+                let operatorIndex = opeerators.findIndex(x => cellRule.includes(` ${x} `));
+                selOperators.selectedIndex = operatorIndex;
 
                 const regex = new RegExp(opeerators.join("|"));
                 const ar = cellRule.split(regex);
@@ -224,11 +324,12 @@
                     selRuleVariables.selectedIndex = ruleVariables.findIndex(x => x.variable == ar[0].trim());
                     txtRuleValue.value = ar[1].trim();
                 }
-                
+
 
             }
 
-
+            selRuleBracketsStart.selectedIndex = 0;
+            selRuleBracketsClose.selectedIndex = 0;
         }
 
         function validateBrackets(rule) {
@@ -254,6 +355,8 @@
             return result;
         }
         function validateFinalRule() {
+            handleCellOnClick(null);
+
             let rule = getFinalRule(false, true);
             spanFinalRule.innerText = rule;
             if (validateBrackets(rule)) {
@@ -269,38 +372,53 @@
             for (let col = 0; col < colCount; col++) {
                 let rule = "";
                 for (let row = 0; row < rowCount; row++) {
-                    let cellRule = tblRuleDesigner.rows[row].cells[col].innerText;
+                    let cell = tblRuleDesigner.rows[row].cells[col];
+                    let cellRule = cell.innerText;
 
                     if (cellRule != "" && cellRule != cellDefaultText) {
-                        const ar = cellRule.split(regex);
-                        if (ar.length > 0) {
-                            selRuleVariables.selectedIndex = ruleVariables.findIndex(x => x.variable == ar[0].trim());
-                            if (ar.length > 1) {
-                                txtRuleValue.value = ar[1].trim();
-                                if (txtRuleValue.value == "" && alertError) {
-                                    alert("Rule value shouldn't be empty!");
-                                    error = true;
+                        if (cellRule.includes("(Select)")) {
+                            cell.innerText = cellDefaultText;
+                            cellRule = "";
+                        }
+                        else {
+                            const ar = cellRule.split(regex);
+                            if (ar.length > 0) {
+                                selRuleVariables.selectedIndex = ruleVariables.findIndex(x => x.variable == ar[0].trim());
+                                if (ar.length > 1) {
+                                    txtRuleValue.value = ar[1].trim();
+                                    if (txtRuleValue.value == "" && alertError) {
+                                        console.log(cellRule);
+                                        alert("Rule value shouldn't be empty!");
+                                        error = true;
+                                    }
                                 }
-                            }
-                            else {
-                                if (alertError) {
-                                    alert("Rule value shouldn't be empty!");
-                                    error = true;
+                                else {
+                                    if (alertError) {
+                                        alert("Rule value shouldn't be empty!");
+                                        error = true;
+                                    }
                                 }
                             }
                         }
 
-                        if (rule == "") {
-                            rule = cellRule;
-                        }
-                        else {
-                            rule = rule + " -a " + cellRule;
+                        if (getCellRule != "") {
+                            if (rule == "") {
+                                rule = cellRule;
+                            }
+                            else {
+                                rule = rule + " -a " + cellRule;
+                            }
                         }
                     }
+
                 }
                 if (rule != "") {
                     rulesPerColumn.push(rule);
                 }
+            }
+
+            if (rulesPerColumn.length > 1) {
+                rulesPerColumn = rulesPerColumn.map(x => x.includes("(") ? x : `(${x})`);
             }
 
             return rulesPerColumn.join(" -o ");
