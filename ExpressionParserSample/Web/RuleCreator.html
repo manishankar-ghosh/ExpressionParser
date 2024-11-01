@@ -4,12 +4,23 @@
         /*
         TotalWagerCount and TotalWagerAmount should be included for all MID+CID combination in the data dictionary
         irrespective of whether it is part of rule or not (this will help keeping the code more generic)
+        e.g. TotalWagerAmount >= 100 -a (WagerAmount >= 25 -a ModuleId = 10025 -a ClientId = 40300)
         */
         let ruleVariables = [
             {
                 "variable": "(Select)",
                 "dataType": "u",
                 "defaultValue": ""
+            },
+            {
+                "variable": "ModuleId",
+                "dataType": "i",
+                "defaultValue": 1
+            },
+            {
+                "variable": "ClientId",
+                "dataType": "i",
+                "defaultValue": 1
             },
             {
                 "variable": "WagerCount", // Total wager count for a particular game in the rule
@@ -40,16 +51,6 @@
                 "variable": "TotalDeposit",
                 "dataType": "d",
                 "defaultValue": 0
-            },
-            {
-                "variable": "ModuleId",
-                "dataType": "i",
-                "defaultValue": 1
-            },
-            {
-                "variable": "ClientId",
-                "dataType": "i",
-                "defaultValue": 1
             }
         ];
 
@@ -102,6 +103,7 @@
     <div style="color: #00aa00">Click the 🖉 symbol to type a new rule</div>
     <div style="color: #00aa00">Rules typed in vertical direction (Column) will be combined using AND</div>
     <div style="color: #00aa00">Rules typed in horizontal direction (Row) will be combined using OR</div>
+    <div style="color: #00aa00">If rule requires MoculeId/ClintId, select them as as first thing so that rules are more consistent with app logic</div>
     <br />
     <button onclick="validateFinalRule()">Validate Rule</button>
     <span id="spanFinalRule" style="font-family: 'Courier New'; background-color: #00aa00; color: #ffffff;">
@@ -370,7 +372,7 @@
             const regex = new RegExp(opeerators.join("|"));
             let rulesPerColumn = [];
             for (let col = 0; col < colCount; col++) {
-                let rule = "";
+                let rule = [];
                 for (let row = 0; row < rowCount; row++) {
                     let cell = tblRuleDesigner.rows[row].cells[col];
                     let cellRule = cell.innerText;
@@ -401,27 +403,92 @@
                             }
                         }
 
-                        if (getCellRule != "") {
-                            if (rule == "") {
-                                rule = cellRule;
-                            }
-                            else {
-                                rule = rule + " -a " + cellRule;
-                            }
+                        if (cellRule != "") {
+                            //rule.push(cellRule);
+                            rule = insertRule(rule, cellRule);
                         }
                     }
 
                 }
-                if (rule != "") {
-                    rulesPerColumn.push(rule);
+                if (rule.length > 0) {
+                    rulesPerColumn.push(rule.join(" -a "));
                 }
             }
 
             if (rulesPerColumn.length > 1) {
-                rulesPerColumn = rulesPerColumn.map(x => x.includes("(") ? x : `(${x})`);
+                rulesPerColumn = rulesPerColumn.map(x => x.includes("(") ? x : `(${x})`); // if rules in a given column are not already inside '()' then put them inside '()'
             }
 
             return rulesPerColumn.join(" -o ");
+        }
+
+        function insertRule(ruleArray, ruleToInsert) {
+            if (ruleArray.length == 0) {
+                ruleArray.push(ruleToInsert);
+                return ruleArray;
+            }
+
+            let field = "ModuleId";
+            if (ruleToInsert.includes(field)) {
+                let itemWithOpenBracketIndex = ruleArray.findLastIndex(x => x.startsWith("(")); //find nearest item in the ruleArray which starts with a (
+                if (itemWithOpenBracketIndex = -1) {
+                    itemWithOpenBracketIndex = 0;
+                }
+
+                let ruleToShiftDown = ruleArray[itemWithOpenBracketIndex];
+                if (ruleToShiftDown.includes(field)) {
+                    ruleArray.push(ruleToInsert);
+                    return ruleArray;
+                }
+
+                let openBracketIndex = ruleToShiftDown.lastIndexOf("(");
+                if (openBracketIndex > -1) {
+                    let r = ruleToShiftDown.substr(0, openBracketIndex + 1) + ruleToInsert;
+                    ruleArray[itemWithOpenBracketIndex] = r;
+                    ruleToShiftDown = ruleToShiftDown.substr(openBracketIndex + 1);
+                }
+                else {
+                    ruleArray[itemWithOpenBracketIndex] = ruleToInsert;
+                }
+                ruleArray.splice(itemWithOpenBracketIndex + 1, 0, ruleToShiftDown);
+            }
+            else {
+                // ClientId ClientId is not inside "(" then put ClientId rule after ModuleId
+                field = "ClientId";
+                if (ruleToInsert.includes(field)) {
+                    if (ruleToInsert.startsWith("(")) {
+                        ruleArray.push(ruleToInsert);
+                        return ruleArray;
+                    }
+
+                    let itemWithModuleIdIndex = ruleArray.findLastIndex(x => x.includes("ModuleId")); //find nearest item in the ruleArray which is a "ModuleId"
+                    if (itemWithModuleIdIndex = -1) {
+                        itemWithModuleIdIndex = 0;
+                    }
+
+                    //if the nearest item in the ruleArray which is a "ModuleId" is the last item in ruleArray then simply push the current item
+                    if (ruleArray.length - 1 == itemWithModuleIdIndex) {
+                        ruleArray.push(ruleToInsert);
+                        return ruleArray;
+                    }
+
+                    let ruleToShiftDown = ruleArray[itemWithModuleIdIndex + 1];
+                    // if the item next to ModuleId is also a ClientId (which should be unlikely, but to be on safer side) then simply push the current item
+                    if (ruleToShiftDown.includes(field)) {
+                        ruleArray.push(ruleToInsert);
+                        return ruleArray;
+                    }
+
+                    ruleArray[itemWithModuleIdIndex + 1] = ruleToInsert;
+                    ruleArray.splice(itemWithModuleIdIndex + 2, 0, ruleToShiftDown);
+                }
+                else {
+                    ruleArray.push(ruleToInsert);
+                    return ruleArray;
+                }
+            }
+
+            return ruleArray;
         }
     </script>
 </body>
